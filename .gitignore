@@ -1,0 +1,9 @@
+# Ignore the images folder (fixed casing)
+Images/
+!Images/.gitkeep
+
+# Ignore VS Code internal databases and settings
+.vscode/
+*.db
+
+__pycache__/
