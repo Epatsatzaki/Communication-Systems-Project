@@ -37,30 +37,56 @@ def generate_qpsk(num_symbols):
     symbols = (2 * bits[:, 0] - 1) + 1j * (2 * bits[:, 1] - 1)
     return symbols / np.sqrt(2)
 
-def generate_16qam(num_symbols):
-    data = np.random.randint(0, 16, num_symbols)
-    i = 2 * (data // 4) - 3
-    q = 2 * (data % 4) - 3
-    return (i + 1j * q) / np.sqrt(10)
-
-
-def demodulate_16qam(symbols):
-    """Hard decision demodulator for normalized 16-QAM."""
-    # 1. Scale back from unit power to the integer grid [-3, -1, 1, 3]
-    # We use sqrt(10) because E_s for 16-QAM is 10
-    scaled = symbols * np.sqrt(10)
+def generate_generic_qam(num_symbols, m):
+    """Generates M-QAM symbols (M must be a square number like 64, 256)."""
+    n = int(np.sqrt(m))
+    data = np.random.randint(0, m, num_symbols)
+    i = 2 * (data // n) - (n - 1)
+    q = 2 * (data % n) - (n - 1)
     
-    # 2. Map to the nearest odd integer (-3, -1, 1, 3)
-    # This is the "Decision Rule" for QAM
-    i_hat = 2 * np.round((np.real(scaled) - 1) / 2) + 1
-    q_hat = 2 * np.round((np.imag(scaled) - 1) / 2) + 1
-    
-    # 3. Boundary Clipping (keeps points inside the 4x4 grid)
-    i_hat = np.clip(i_hat, -3, 3)
-    q_hat = np.clip(q_hat, -3, 3)
-    
-    # 4. Normalize back so we can compare with the original tx symbols
-    return (i_hat + 1j * q_hat) / np.sqrt(10)
+    # Normalization: Average power for M-QAM is (M-1)/3
+    norm = np.sqrt((m - 1) / 3.0)
+    return (i + 1j * q) / norm
 
+def generate_cross_qam(num_symbols, m):
+    """Generates 32-QAM or 128-QAM cross constellations."""
+    # Determine the grid size (6x6 for 32, 12x12 for 128)
+    if m == 32:
+        n, corners = 6, 1 # Remove 1 point from each corner of the 6x6 grid
+    elif m == 128:
+        n, corners = 12, 2 # Remove 4 points (2x2) from each corner of the 12x12 grid
+    else:
+        raise ValueError("This function is specifically for 32 or 128 cross-QAM.")
 
-# Add 64-QAM, BPSK, 8-ASK, etc. here as you go!
+    # Create the grid
+    points = []
+    limit = n - 1
+    for i in range(-limit, limit + 1, 2):
+        for q in range(-limit, limit + 1, 2):
+            # Check if the point is in the corner 'exclusion zone'
+            if not (abs(i) > (limit - 2*corners) and abs(q) > (limit - 2*corners)):
+                points.append(i + 1j * q)
+    
+    # Randomly sample from the valid points
+    points = np.array(points)
+    data = np.random.choice(points, num_symbols)
+    
+    # Normalization (E_avg is 20 for 32-QAM, ~82 for 128-QAM)
+    norm = np.sqrt(np.mean(np.abs(points)**2))
+    return data / norm
+
+def demodulate_generic_qam(symbols, m):
+    n = int(np.sqrt(m))
+    norm = np.sqrt((m - 1) / 3.0)
+    scaled = symbols * norm
+    
+    # Snap to nearest odd integer
+    i_hat = 2 * np.round((np.real(scaled) - (-(n-1))) / 2) + (-(n-1))
+    q_hat = 2 * np.round((np.imag(scaled) - (-(n-1))) / 2) + (-(n-1))
+    
+    # Clip boundaries
+    limit = n - 1
+    i_hat = np.clip(i_hat, -limit, limit)
+    q_hat = np.clip(q_hat, -limit, limit)
+    
+    return (i_hat + 1j * q_hat) / norm

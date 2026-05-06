@@ -19,6 +19,27 @@ MOD_CONFIG = {
         "theory": lambda snr_lin: 1.5 * erfc(np.sqrt(snr_lin / 10)),
         "snr_range": np.arange(0, 22, 2), # 16-QAM needs more SNR
         "pn_list": [0, 2, 5] # 16-QAM is more sensitive to phase noise
+    },
+    "64-QAM": {
+        "gen": lambda n: generate_generic_qam(n, 64),
+        "demod": lambda s: demodulate_generic_qam(s, 64),
+        "theory": lambda snr_lin: (7/4) * erfc(np.sqrt(snr_lin / 42)),
+        "snr_range": np.arange(0, 26, 2),
+        "pn_list": [0, 1, 2] # Very sensitive!
+    },
+    "256-QAM": {
+        "gen": lambda n: generate_generic_qam(n, 256),
+        "demod": lambda s: demodulate_generic_qam(s, 256),
+        "theory": lambda snr_lin: (15/8) * erfc(np.sqrt(snr_lin / 170)),
+        "snr_range": np.arange(10, 32, 2),
+        "pn_list": [0, 0.5, 1] # Extremely sensitive!
+    },
+    "4-HQAM": { # Often treated as QPSK with a specific offset
+        "gen": engine.generate_qpsk, 
+        "demod": MOD_CONFIG["QPSK"]["demod"],
+        "theory": MOD_CONFIG["QPSK"]["theory"],
+        "snr_range": np.arange(0, 16, 2),
+        "pn_list": [0, 5, 10]
     }
 }
 
