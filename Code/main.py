@@ -11,7 +11,25 @@ def main():
     print("--- Starting Dataset Generation ---")
     
     modulations_to_run = {
-        
+        """
+            # Existing ones
+    "QPSK": lambda n: engine.generate_qpsk(n),
+    "16-QAM": lambda n: engine.generate_generic_qam(n, 16),
+    "64-QAM": lambda n: engine.generate_generic_qam(n, 64),
+    "16-HQAM": lambda n: engine.generate_hex_box_qam(n, 16),
+    "64-HQAM": lambda n: engine.generate_hex_box_qam(n, 64),
+    
+    # New ASK modulations
+    "4-ASK": lambda n: engine.generate_ask(n, 4),
+    "8-ASK": lambda n: engine.generate_ask(n, 8),
+    
+    # New APSK modulations
+    "16-APSK": lambda n: engine.generate_apsk(n, 16),
+    "32-APSK": lambda n: engine.generate_apsk(n, 32),
+    "64-APSK": lambda n: engine.generate_apsk(n, 64),
+    "128-APSK": lambda n: engine.generate_apsk(n, 128)
+
+    """
         
         
         "64-QAM": lambda n: generate_generic_qam(n, 64),
