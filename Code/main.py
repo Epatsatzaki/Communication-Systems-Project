@@ -11,12 +11,12 @@ def main():
     print("--- Starting Dataset Generation ---")
     
     modulations_to_run = {
-        "QPSK":    generate_qpsk,
-        "16-QAM":  lambda n: generate_generic_qam(n, 16),
-        "32-QAM":  lambda n: generate_cross_qam(n, 32),
-        "64-QAM":  lambda n: generate_generic_qam(n, 64),
-        "128-QAM": lambda n: generate_cross_qam(n, 128),
-        "256-QAM": lambda n: generate_generic_qam(n, 256),
+        
+        
+        
+        "64-QAM": lambda n: generate_generic_qam(n, 64),
+        "128-QAM": lambda n: generate_generic_qam(n, 128),
+        "256-QAM": lambda n: generate_generic_qam(n, 256)
     }
 
     # Open CSV in write mode to start fresh

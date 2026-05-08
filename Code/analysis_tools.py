@@ -14,48 +14,62 @@ MOD_CONFIG = {
         "pn_list": [0, 5, 10]
     },
     "16-QAM": {
-        "gen": engine.generate_16qam,
-        "demod": engine.demodulate_16qam, # Assuming this is in your signal_engine.py
+        "gen": engine.generate_generic_qam,
+        "demod": engine.demodulate_generic_qam, # Assuming this is in your signal_engine.py
         "theory": lambda snr_lin: 1.5 * erfc(np.sqrt(snr_lin / 10)),
         "snr_range": np.arange(0, 22, 2), # 16-QAM needs more SNR
         "pn_list": [0, 2, 5] # 16-QAM is more sensitive to phase noise
     },
     "64-QAM": {
-        "gen": lambda n: generate_generic_qam(n, 64),
-        "demod": lambda s: demodulate_generic_qam(s, 64),
+        "gen": lambda n: engine.generate_generic_qam(n, 64),
+        "demod": lambda s: engine.demodulate_generic_qam(s, 64),
         "theory": lambda snr_lin: (7/4) * erfc(np.sqrt(snr_lin / 42)),
         "snr_range": np.arange(0, 26, 2),
         "pn_list": [0, 1, 2] # Very sensitive!
     },
     "256-QAM": {
-        "gen": lambda n: generate_generic_qam(n, 256),
-        "demod": lambda s: demodulate_generic_qam(s, 256),
+        "gen": lambda n: engine.generate_generic_qam(n, 256),
+        "demod": lambda s: engine.demodulate_generic_qam(s, 256),
         "theory": lambda snr_lin: (15/8) * erfc(np.sqrt(snr_lin / 170)),
         "snr_range": np.arange(10, 32, 2),
         "pn_list": [0, 0.5, 1] # Extremely sensitive!
     },
-    "4-HQAM": { # Often treated as QPSK with a specific offset
-        "gen": engine.generate_qpsk, 
-        "demod": MOD_CONFIG["QPSK"]["demod"],
-        "theory": MOD_CONFIG["QPSK"]["theory"],
-        "snr_range": np.arange(0, 16, 2),
-        "pn_list": [0, 5, 10]
-    }
+    "16-HQAM": {
+        "gen": lambda n: engine.generate_hex_qam(n, 16),
+        "demod": lambda s: engine.demodulate_hex_qam(s, 16)[1], # We need the ideal points back
+        "theory": lambda snr_lin: 3 * erfc(np.sqrt(0.3 * snr_lin)), # Approximation for Hex
+        "snr_range": np.arange(0, 20, 2),
+        "pn_list": [0, 2, 5]
+    },
+    "64-HQAM": {
+        "gen": lambda n: engine.generate_hex_qam(n, 64),
+        "demod": lambda s: engine.demodulate_hex_qam(s, 64)[1],
+        "theory": lambda snr_lin: 3.5 * erfc(np.sqrt(0.07 * snr_lin)), # Approximation for Hex
+        "snr_range": np.arange(10, 28, 2),
+        "pn_list": [0, 1, 2]
+    },
 }
 
 def run_simulation(mod_name, snr_db, pn_std_deg):
-    num_symbols = 1000000 
+    num_symbols = 100000 # 100k is enough for a smooth curve and much faster
     config = MOD_CONFIG[mod_name]
     
-    # 1. Generate dynamically
+    # 1. Generate tx signal
     tx = config["gen"](num_symbols)
     
     # 2. Apply Impairments
     rx = engine.apply_phase_noise(tx, pn_std_deg)
     rx = engine.apply_awgn(rx, snr_db)
     
-    # 3. Demodulate dynamically
-    decoded = config["demod"](rx)
+    # 3. Demodulate
+    if "HQAM" in mod_name or "HQAM" in mod_name:
+        m_val = int(mod_name.split('-')[0])
+        # Get indices of closest points
+        indices, ideal_points = engine.demodulate_hex_qam(rx, m_val)
+        # Map those indices back to complex coordinates for comparison
+        decoded = ideal_points[indices]
+    else:
+        decoded = config["demod"](rx)
     
     # 4. Count Errors
     errors = np.sum(np.abs(tx - decoded) > 0.01)
@@ -88,4 +102,4 @@ def plot_performance(mod_name):
 
 if __name__ == "__main__":
     # Just change this string to switch the whole script!
-    plot_performance("16-QAM")
+    plot_performance("16-HQAM")

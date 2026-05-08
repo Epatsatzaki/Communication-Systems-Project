@@ -53,7 +53,7 @@ def generate_for_modulation(mod_name, gen_function, writer):
                 snr, pn, iq_a, iq_p, jam, amp_dist, sev = np.random.uniform(5, 10), np.random.uniform(8, 18), np.random.uniform(1.0, 2.5), np.random.uniform(8, 20), np.random.uniform(-15, -10), 0.2, "High"
 
             # Process Signal
-            sig = gen_function(1000) # Calls the specific modulation function
+            sig = gen_function(np.random.randint(200, 1000)) # Calls the specific modulation function
             if pn > 0: sig = apply_phase_noise(sig, pn)
             if iq_a > 0 or iq_p > 0: sig = apply_iq_imbalance(sig, iq_a, iq_p)
             if amp_dist > 0: sig = apply_amplitude_distortion(sig, amp_dist)

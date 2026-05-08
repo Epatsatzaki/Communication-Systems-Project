@@ -90,3 +90,97 @@ def demodulate_generic_qam(symbols, m):
     q_hat = np.clip(q_hat, -limit, limit)
     
     return (i_hat + 1j * q_hat) / norm
+    
+def generate_hex_qam(num_symbols, m):
+    """Generates a rectangular box-shaped Hexagonal QAM constellation."""
+    n = int(np.sqrt(m)) # 4 for 16, 8 for 64
+    points = []
+    
+    for row in range(n):
+        for col in range(n):
+            # x is shifted by 0.5 for odd rows
+            x = col + 0.5 * (row % 2)
+            y = row * (np.sqrt(3) / 2)
+            points.append(x + 1j * y)
+            
+    points = np.array(points)
+    
+    # Center the constellation around (0,0)
+    points -= np.mean(points)
+    
+    # Map and Normalize
+    data = np.random.choice(points, num_symbols)
+    norm = np.sqrt(np.mean(np.abs(points)**2))
+    return data / norm
+
+def demodulate_hex_qam(received_sig, m):
+    """
+    Demodulates Hexagonal QAM using Minimum Euclidean Distance.
+    """
+    # 1. Recreate the EXACT ideal constellation used during generation
+    # (Must be normalized the same way as the transmitter)
+    n = int(np.sqrt(m))
+    ideal_points = []
+    for row in range(n):
+        for col in range(n):
+            x = col + 0.5 * (row % 2)
+            y = row * (np.sqrt(3) / 2)
+            ideal_points.append(x + 1j * y)
+            
+    ideal_points = np.array(ideal_points)
+    ideal_points -= np.mean(ideal_points)
+    norm = np.sqrt(np.mean(np.abs(ideal_points)**2))
+    ideal_points /= norm # This is our "Codebook"
+
+    # 2. Nearest Neighbor Search
+    demodulated_indices = []
+    for rx_sym in received_sig:
+        # Calculate distance from this received dot to all 16/64 ideal points
+        distances = np.abs(rx_sym - ideal_points)
+        # Pick the index of the closest ideal point
+        best_match_idx = np.argmin(distances)
+        demodulated_indices.append(best_match_idx)
+        
+    return np.array(demodulated_indices), ideal_points
+
+def generate_ask(num_symbols, m):
+    # Points at -7, -5, -3, -1, 1, 3, 5, 7 for 8-ASK
+    levels = np.arange(-(m-1), m, 2)
+    sig = np.random.choice(levels, num_symbols).astype(complex)
+    return sig / np.sqrt(np.mean(np.abs(levels)**2))
+
+def generate_apsk(num_symbols, m):
+    if m == 16:
+        n_rings = [4, 12]
+        radii = [1.0, 2.6]
+        offsets = [np.pi/4, np.pi/12] 
+    elif m == 32:
+        n_rings = [4, 12, 16]
+        radii = [1.0, 2.54, 4.54]
+        offsets = [np.pi/4, np.pi/12, np.pi/16]
+    elif m == 64:
+        # Standard 64-APSK configuration (e.g., DVB-S2X)
+        n_rings = [4, 12, 20, 28]
+        radii = [1.0, 2.4, 4.3, 7.0]
+        offsets = [np.pi/4, np.pi/12, np.pi/20, np.pi/28]
+    elif m == 128:
+        # Approximate rings for 128-APSK
+        n_rings = [4, 12, 20, 28, 64]
+        radii = [1.0, 2.4, 4.3, 7.0, 10.5]
+        offsets = [np.pi/4, np.pi/12, np.pi/20, np.pi/28, 0]
+    else:
+        # Fallback to a circular 16-APSK if m is unrecognized
+        n_rings = [4, 12]
+        radii = [1.0, 2.6]
+        offsets = [np.pi/4, np.pi/12]
+    
+    points = []
+    for n, r, phi in zip(n_rings, radii, offsets):
+        # Apply the phi offset here
+        angles = np.linspace(0, 2*np.pi, n, endpoint=False) + phi
+        points.extend(r * np.exp(1j * angles))
+    
+    points = np.array(points)
+    # Standard normalization logic
+    sig = np.random.choice(points, num_symbols)
+    return sig / np.sqrt(np.mean(np.abs(points)**2))
