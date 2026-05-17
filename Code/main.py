@@ -2,6 +2,7 @@ import os
 import csv
 from signal_engine import *
 from dataset_generator import generate_for_modulation
+import pandas as pd
 
 # Ensure this matches your structure
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,6 +17,8 @@ def main():
     "QPSK": lambda n: engine.generate_qpsk(n),
     "16-QAM": lambda n: engine.generate_generic_qam(n, 16),
     "64-QAM": lambda n: engine.generate_generic_qam(n, 64),
+    "128-QAM": lambda n: engine.generate_generic_qam(n, 128),
+    "256-QAM": lambda n: engine.generate_generic_qam(n, 256),
     "16-HQAM": lambda n: engine.generate_hex_box_qam(n, 16),
     "64-HQAM": lambda n: engine.generate_hex_box_qam(n, 64),
     
@@ -30,11 +33,6 @@ def main():
     "128-APSK": lambda n: engine.generate_apsk(n, 128)
 
     """
-        
-        
-        "64-QAM": lambda n: generate_generic_qam(n, 64),
-        "128-QAM": lambda n: generate_generic_qam(n, 128),
-        "256-QAM": lambda n: generate_generic_qam(n, 256)
     }
 
     # Open CSV in write mode to start fresh
