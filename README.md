@@ -1,4 +1,4 @@
-# Thlep-Project: Seeing Signals
+# Communication-System-Project: Seeing Signals
 
 This repository contains the complete source code, datasets, and final report for the **Communication Systems II** project, focusing on RF signal modeling, modulation classification, and advanced AI architectures.
 
