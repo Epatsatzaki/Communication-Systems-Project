@@ -14,32 +14,41 @@ MOD_CONFIG = {
         "pn_list": [0, 5, 10]
     },
     "16-QAM": {
-        "gen": engine.generate_generic_qam,
-        "demod": engine.demodulate_generic_qam, # Assuming this is in your signal_engine.py
-        "theory": lambda snr_lin: 1.5 * erfc(np.sqrt(snr_lin / 10)),
-        "snr_range": np.arange(0, 22, 2), # 16-QAM needs more SNR
-        "pn_list": [0, 2, 5] # 16-QAM is more sensitive to phase noise
+        "gen": lambda n: engine.generate_generic_qam(n, 16),
+        "demod": lambda s: engine.demodulate_generic_qam(s, 16),
+        # k = 3 / (2*(16-1)) = 3/30 = 0.1
+        "theory": lambda snr_lin: 1.5 * erfc(np.sqrt(0.1 * snr_lin)) - 0.5625 * (erfc(np.sqrt(0.1 * snr_lin)))**2,
+        "snr_range": np.arange(0, 22, 2),
+        "pn_list": [0, 2, 5]
+    },
+    "32-QAM": {
+        "gen": lambda n: engine.generate_cross_qam(n, 32),
+        "demod": lambda s: engine.demodulate_cross_qam(s, 32),
+        # E_avg = 20*d^2. The scaling inside the erfc becomes 1/20 = 0.05
+        "theory": lambda snr_lin: 1.625 * erfc(np.sqrt(0.05 * snr_lin)) - 0.6875 * (erfc(np.sqrt(0.05 * snr_lin)))**2,
+        "snr_range": np.arange(4, 24, 2),
+        "pn_list": [0, 2, 5]
     },
     "64-QAM": {
         "gen": lambda n: engine.generate_generic_qam(n, 64),
         "demod": lambda s: engine.demodulate_generic_qam(s, 64),
-        "theory": lambda snr_lin: (7/4) * erfc(np.sqrt(snr_lin / 42)),
-        "snr_range": np.arange(0, 26, 2),
-        "pn_list": [0, 1, 2] # Very sensitive!
+        "theory": lambda snr_lin: 1.75 * erfc(np.sqrt(snr_lin / 42.0)) - 0.765625 * (erfc(np.sqrt(snr_lin / 42.0)))**2,
+        "snr_range": np.arange(8, 26, 2), # 64-QAM needs higher SNR
+        "pn_list": [0, 2, 5] # 64-QAM is highly sensitive to phase noise
+    },
+    "128-QAM": {
+        "gen": lambda n: engine.generate_cross_qam(n, 128),
+        "demod": lambda s: engine.demodulate_cross_qam(s, 128), # Or engine.demodulate_cross_qam depending on where you saved it
+        "theory": lambda snr_lin: 1.8125 * erfc(np.sqrt(snr_lin / 82.0)) - 0.828125 * (erfc(np.sqrt(snr_lin / 82.0)))**2,
+        "snr_range": np.arange(12, 32, 2),
+        "pn_list": [0, 2, 5] 
     },
     "256-QAM": {
         "gen": lambda n: engine.generate_generic_qam(n, 256),
         "demod": lambda s: engine.demodulate_generic_qam(s, 256),
-        "theory": lambda snr_lin: (15/8) * erfc(np.sqrt(snr_lin / 170)),
-        "snr_range": np.arange(10, 32, 2),
-        "pn_list": [0, 0.5, 1] # Extremely sensitive!
-    },
-    "16-HQAM": {
-        "gen": lambda n: engine.generate_hex_qam(n, 16),
-        "demod": lambda s: engine.demodulate_hex_qam(s, 16)[1], # We need the ideal points back
-        "theory": lambda snr_lin: 3 * erfc(np.sqrt(0.3 * snr_lin)), # Approximation for Hex
-        "snr_range": np.arange(0, 20, 2),
-        "pn_list": [0, 2, 5]
+        "theory": lambda snr_lin: 1.875 * erfc(np.sqrt(snr_lin / 170.0)) - 0.87890625 * (erfc(np.sqrt(snr_lin / 170.0)))**2,
+        "snr_range": np.arange(16, 36, 2), # Requires very high SNR to overcome noise
+        "pn_list": [0, 2, 5] 
     },
     "64-HQAM": {
         "gen": lambda n: engine.generate_hex_qam(n, 64),
@@ -51,7 +60,7 @@ MOD_CONFIG = {
 }
 
 def run_simulation(mod_name, snr_db, pn_std_deg):
-    num_symbols = 100000 # 100k is enough for a smooth curve and much faster
+    num_symbols = 20000000 # 100k is enough for a smooth curve and much faster
     config = MOD_CONFIG[mod_name]
     
     # 1. Generate tx signal
@@ -102,4 +111,4 @@ def plot_performance(mod_name):
 
 if __name__ == "__main__":
     # Just change this string to switch the whole script!
-    plot_performance("16-HQAM")
+    plot_performance("256-QAM")

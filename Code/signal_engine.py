@@ -38,14 +38,13 @@ def generate_qpsk(num_symbols):
     return symbols / np.sqrt(2)
 
 def generate_generic_qam(num_symbols, m):
-    """Generates M-QAM symbols (M must be a square number like 64, 256)."""
     n = int(np.sqrt(m))
     data = np.random.randint(0, m, num_symbols)
     i = 2 * (data // n) - (n - 1)
     q = 2 * (data % n) - (n - 1)
     
-    # Normalization: Average power for M-QAM is (M-1)/3
-    norm = np.sqrt((m - 1) / 3.0)
+    # Must match demodulator exactly
+    norm = np.sqrt(2 * (m - 1) / 3.0)
     return (i + 1j * q) / norm
 
 def generate_cross_qam(num_symbols, m):
@@ -77,7 +76,9 @@ def generate_cross_qam(num_symbols, m):
 
 def demodulate_generic_qam(symbols, m):
     n = int(np.sqrt(m))
-    norm = np.sqrt((m - 1) / 3.0)
+    
+    # Must match generator exactly
+    norm = np.sqrt(2 * (m - 1) / 3.0)
     scaled = symbols * norm
     
     # Snap to nearest odd integer
@@ -90,6 +91,34 @@ def demodulate_generic_qam(symbols, m):
     q_hat = np.clip(q_hat, -limit, limit)
     
     return (i_hat + 1j * q_hat) / norm
+
+def demodulate_cross_qam(symbols, m):
+    """Demodulates 32-QAM or 128-QAM Cross Constellations."""
+    if m == 32:
+        n, corners = 6, 1
+    elif m == 128:
+        n, corners = 12, 2
+    else:
+        raise ValueError("Only 32 and 128 cross-QAM supported.")
+        
+    # 1. Recreate the exact ideal constellation
+    ideal_points = []
+    limit = n - 1
+    for i in range(-limit, limit + 1, 2):
+        for q in range(-limit, limit + 1, 2):
+            if not (abs(i) > (limit - 2*corners) and abs(q) > (limit - 2*corners)):
+                ideal_points.append(i + 1j * q)
+                
+    ideal_points = np.array(ideal_points)
+    norm = np.sqrt(np.mean(np.abs(ideal_points)**2))
+    ideal_points /= norm
+    
+    # 2. Fast Nearest Neighbor Search using array broadcasting
+    symbols_col = symbols[:, np.newaxis]
+    distances = np.abs(symbols_col - ideal_points)
+    best_match_indices = np.argmin(distances, axis=1)
+    
+    return ideal_points[best_match_indices]
     
 def generate_hex_qam(num_symbols, m):
     """Generates a rectangular box-shaped Hexagonal QAM constellation."""
