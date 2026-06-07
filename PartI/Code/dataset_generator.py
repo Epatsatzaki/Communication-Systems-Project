@@ -54,6 +54,7 @@ def generate_for_modulation(mod_name, gen_function, writer):
 
             # Process Signal
             sig = gen_function(np.random.randint(200, 1000)) # Calls the specific modulation function
+            #sig = gen_function(np.random.randint(1500, 1700)) # use this for bigger constellations (for ex. 256-QAM)
             if pn > 0: sig = apply_phase_noise(sig, pn)
             if iq_a > 0 or iq_p > 0: sig = apply_iq_imbalance(sig, iq_a, iq_p)
             if amp_dist > 0: sig = apply_amplitude_distortion(sig, amp_dist)
